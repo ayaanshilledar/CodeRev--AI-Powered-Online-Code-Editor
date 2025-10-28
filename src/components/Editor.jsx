@@ -108,22 +108,29 @@ export default function CodeEditor({ file }) {
     }
   };
 
-  const fixSyntaxErrors = async () => {
-    setIsFixing(true);
-    try {
-      const res = await axios.post("/api/get-errors", {
-        code: updatedCode,
-        codeLanguage,
-      });
-      if (res.data.fixedCode) {
-        setUpdatedCode(res.data.fixedCode);
+const fixSyntaxErrors = async () => {
+  setIsFixing(true);
+  try {
+    const res = await axios.post("/api/get-errors", {
+      code: updatedCode,
+      language: codeLanguage,
+    });
+
+    if (res.data.fixedCode) {
+      setUpdatedCode(res.data.fixedCode);
+      if (!res.data.aiFixed) {
+        console.log("No fixes were needed");
       }
-    } catch (error) {
-      console.error("Failed to fix syntax:", error);
-    } finally {
-      setIsFixing(false);
     }
-  };
+  } catch (error) {
+    console.error(
+      "Failed to fix syntax:",
+      error?.response?.data?.error || error.message
+    );
+  } finally {
+    setIsFixing(false);
+  }
+};
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
