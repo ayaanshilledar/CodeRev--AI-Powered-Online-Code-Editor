@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/config/firebase";
-import { UserPlus, X } from "lucide-react";
+import { UserPlus, X, Search, Mail } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function SearchBar({ workspaceId }) {
@@ -11,7 +11,7 @@ export default function SearchBar({ workspaceId }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [workspaceMembers, setWorkspaceMembers] = useState(new Set()); // Store members as a Set
+  const [workspaceMembers, setWorkspaceMembers] = useState(new Set());
   const auth = getAuth();
   const currentUserEmail = auth.currentUser?.email;
   const searchRef = useRef(null);
@@ -48,7 +48,7 @@ export default function SearchBar({ workspaceId }) {
     try {
       const membersQuery = collection(db, `workspaces/${workspaceId}/members`);
       const membersSnapshot = await getDocs(membersQuery);
-      const membersSet = new Set(membersSnapshot.docs.map(doc => doc.id)); // Store member userIds
+      const membersSet = new Set(membersSnapshot.docs.map(doc => doc.id));
       setWorkspaceMembers(membersSet);
     } catch (error) {
       console.error("Error fetching workspace members:", error);
@@ -71,7 +71,6 @@ export default function SearchBar({ workspaceId }) {
         ...doc.data(),
       }));
 
-      // Filter out current user and existing workspace members
       matchedUsers = matchedUsers.filter(user => user.email !== currentUserEmail && !workspaceMembers.has(user.id));
 
       setUsers(matchedUsers);
@@ -90,7 +89,17 @@ export default function SearchBar({ workspaceId }) {
         invites: arrayUnion(workspaceId),
       });
 
-      toast.success(`${userEmail} has been invited.`);
+      toast.success(`${userEmail} invited`, {
+        style: {
+          background: '#18181b',
+          color: '#fff',
+          border: '1px solid #27272a',
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#18181b',
+        },
+      });
     } catch (error) {
       console.error("Error sending invitation:", error);
       toast.error("Failed to send invitation");
@@ -99,44 +108,69 @@ export default function SearchBar({ workspaceId }) {
 
   return (
     <div className="relative flex items-center">
-      <button ref={searchRef} className="rounded-full transition flex items-start gap-2" onClick={() => setIsOpen(!isOpen)}>
-        <UserPlus className="w-5 h-5 text-white" />Invite
+      <button
+        ref={searchRef}
+        className="flex items-center gap-2 px-3 py-1.5 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium transition-all"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <UserPlus className="w-4 h-4" />
+        <span>Invite</span>
       </button>
 
       {isOpen && (
-        <div ref={searchRef} className="absolute top-10 right-0 bg-slate-800 p-4 rounded-lg shadow-lg w-96 z-50">
-          <div className="flex items-center border-b border-gray-600 pb-2">
-            <input
-              type="text"
-              placeholder="Search users by email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-white p-2 text-sm outline-none"
-            />
-            <button className="ml-2 text-gray-400 hover:text-white" onClick={() => setIsOpen(false)}>
-              <X className="w-5 h-5" />
+        <div ref={searchRef} className="absolute top-10 right-0 bg-zinc-900/95 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-2xl w-80 z-50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Invite Members</h3>
+            <button
+              className="text-zinc-400 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {loading && <div className="text-gray-400 text-center mt-2">Loading...</div>}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search by email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-zinc-800/50 border border-white/10 text-white pl-9 pr-3 py-2 rounded-lg text-sm outline-none focus:border-white/30 transition-colors placeholder:text-zinc-600"
+              autoFocus
+            />
+          </div>
 
-          <div className=" mt-2 max-h-60 overflow-y-auto">
-            {users.map((user) => (
-              <div key={user.id} className="flex justify-between items-center p-2 hover:bg-gray-800 rounded-md">
-                <span className="text-white text-sm">{user.email}</span>
-                <button
-                  className="p-1 bg-blue-500 text-white rounded-md px-4 text-sm hover:bg-blue-600"
-                  onClick={() => inviteUser(user.id, user.email)}
-                >
-                  Invite
-                </button>
+          {loading && <div className="text-zinc-500 text-center text-xs py-2">Searching...</div>}
+
+          <div className="max-h-60 overflow-y-auto space-y-1">
+            {users.length > 0 ? (
+              users.map((user) => (
+                <div key={user.id} className="flex justify-between items-center p-2 hover:bg-zinc-800/50 rounded-lg transition-colors group">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 border border-white/10">
+                      <Mail className="w-3 h-3 text-zinc-400" />
+                    </div>
+                    <span className="text-zinc-300 text-sm truncate">{user.email}</span>
+                  </div>
+                  <button
+                    className="px-3 py-1 bg-white text-black text-xs font-medium rounded-md hover:bg-zinc-200 transition-colors opacity-0 group-hover:opacity-100"
+                    onClick={() => inviteUser(user.id, user.email)}
+                  >
+                    Add
+                  </button>
+                </div>
+              ))
+            ) : searchTerm.length > 0 && !loading ? (
+              <div className="text-center py-4 text-zinc-500 text-xs">
+                No users found
               </div>
-            ))}
+            ) : null}
           </div>
         </div>
       )}
 
-      <Toaster position="right-center" />
+      <Toaster position="bottom-right" />
     </div>
   );
 }

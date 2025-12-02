@@ -1,5 +1,5 @@
 "use client";
-import { Moon, Sun, Sparkles, Wrench, File, Expand, Shrink, Settings } from "lucide-react";
+import { Moon, Sun, Sparkles, Wrench, File, Expand, Shrink, Settings, Code2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import axios from "axios";
@@ -68,7 +68,7 @@ export default function CodeEditor({ file }) {
   const handleEditorChange = (value) => {
     setUpdatedCode(value);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => autoSaveFile(value), 0);
+    timeoutRef.current = setTimeout(() => autoSaveFile(value), 1000);
   };
 
   const autoSaveFile = async (content) => {
@@ -108,29 +108,29 @@ export default function CodeEditor({ file }) {
     }
   };
 
-const fixSyntaxErrors = async () => {
-  setIsFixing(true);
-  try {
-    const res = await axios.post("/api/get-errors", {
-      code: updatedCode,
-      language: codeLanguage,
-    });
+  const fixSyntaxErrors = async () => {
+    setIsFixing(true);
+    try {
+      const res = await axios.post("/api/get-errors", {
+        code: updatedCode,
+        language: codeLanguage,
+      });
 
-    if (res.data.fixedCode) {
-      setUpdatedCode(res.data.fixedCode);
-      if (!res.data.aiFixed) {
-        console.log("No fixes were needed");
+      if (res.data.fixedCode) {
+        setUpdatedCode(res.data.fixedCode);
+        if (!res.data.aiFixed) {
+          console.log("No fixes were needed");
+        }
       }
+    } catch (error) {
+      console.error(
+        "Failed to fix syntax:",
+        error?.response?.data?.error || error.message
+      );
+    } finally {
+      setIsFixing(false);
     }
-  } catch (error) {
-    console.error(
-      "Failed to fix syntax:",
-      error?.response?.data?.error || error.message
-    );
-  } finally {
-    setIsFixing(false);
-  }
-};
+  };
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -153,116 +153,126 @@ const fixSyntaxErrors = async () => {
     { name: "High Contrast", value: "hc-black" },
   ];
 
-  // Add this function near the top of your component, after the state declarations
   const getMonacoLanguage = (language) => {
-    // Map C to C++ for syntax highlighting
     if (language === "c") return "cpp";
     return language;
   };
 
-  // Add this before the return statement
-  console.log("Current language:", codeLanguage);
-  console.log("Monaco language:", getMonacoLanguage(codeLanguage));
-
   return (
     <div
-      className={`bg-gray-900 m-2 h-[94%] rounded-xl p-3 ${
-        isExpanded ? "fixed inset-0 z-50 m-0" : "relative"
-      }`}
+      className={`bg-black/50 backdrop-blur-sm h-full rounded-xl border border-white/10 overflow-hidden flex flex-col ${isExpanded ? "fixed inset-0 z-50 m-0 rounded-none bg-black" : "relative"
+        }`}
     >
-      <Box className="relative h-full">
-        <div className="flex h-full">
-          <Box
-            w={isExpanded ? "100%" : "78%"}
-            transition="all 0.3s ease"
-            className=" bg-green-30 h-[100%]"
-          >
-            <div className="flex justify-between items-center h-[10%] pr-12 ">
-              {file && (
-                <div className="flex items-center bg-gray-900 text-white px-4 max-h-[50px] rounded-md shadow-md border border-gray-700 w-40">
-                  <File size={16} className="mr-2 text-green-400" />
-                  <span className="text-sm text-gray-300 line-clamp-1">
-                    {file.name}
-                  </span>
-                </div>
-              )}
-              <div className="flex gap-3 items-center ">
-                <div className="relative" ref={settingsRef}>
-                  <button
-                    className="flex hidden items-center bg-gray-800 text-white p-2 rounded-full shadow-md hover:bg-gray-700 transition ring-1 ring-gray-600"
-                    onClick={() => setShowSettings(!showSettings)}
-                  >
-                    <Settings size={16} />
-                  </button>
-                  {showSettings && (
-                    <div className="absolute left-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl p-3 space-y-3 z-50">
-                      <div>
-                        <label className="text-xs text-gray-300 mb-1 block">
-                          Theme
-                        </label>
-                        <select
-                          className="w-full bg-gray-700 text-gray-200 text-xs p-1 rounded"
-                          value={selectedTheme}
-                          onChange={(e) => setSelectedTheme(e.target.value)}
-                        >
-                          {themes.map((theme) => (
-                            <option key={theme.value} value={theme.value}>
-                              {theme.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-300 mb-1 block">
-                          Font Size
-                        </label>
+      <div className="flex flex-1 overflow-hidden">
+        <div
+          className={`transition-all duration-300 flex flex-col ${isExpanded ? "w-full" : "w-[70%]"
+            } border-r border-white/10`}
+        >
+          {/* Editor Header */}
+          <div className="flex justify-between items-center h-12 px-4 border-b border-white/10 bg-zinc-900/50">
+            {file ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                <File size={14} className="text-zinc-400" />
+                <span className="text-xs text-zinc-200 font-medium line-clamp-1 max-w-[150px]">
+                  {file.name}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                <Code2 size={14} className="text-zinc-400" />
+                <span className="text-xs text-zinc-400 font-medium">No file selected</span>
+              </div>
+            )}
+
+            <div className="flex gap-2 items-center">
+              {/* Settings Dropdown */}
+              <div className="relative" ref={settingsRef}>
+                <button
+                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  onClick={() => setShowSettings(!showSettings)}
+                  title="Editor Settings"
+                >
+                  <Settings size={16} />
+                </button>
+                {showSettings && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-3 z-50">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
+                        Theme
+                      </label>
+                      <select
+                        className="w-full bg-zinc-800 text-zinc-200 text-xs p-2 rounded-lg border border-white/5 focus:border-white/20 outline-none"
+                        value={selectedTheme}
+                        onChange={(e) => setSelectedTheme(e.target.value)}
+                      >
+                        {themes.map((theme) => (
+                          <option key={theme.value} value={theme.value}>
+                            {theme.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
+                        Font Size
+                      </label>
+                      <div className="flex items-center gap-3">
                         <input
                           type="range"
                           min="10"
                           max="24"
                           value={fontSize}
                           onChange={(e) => setFontSize(Number(e.target.value))}
-                          className="w-full bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                          className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-white"
                         />
-                        <span className="text-xs text-gray-300 block text-center">
+                        <span className="text-xs text-zinc-300 w-8 text-right font-mono">
                           {fontSize}px
                         </span>
                       </div>
                     </div>
-                  )}
-                </div>
-                <button
-                  className="flex items-center gap-1.5 bg-blue-700 bg-opacity-20 ring-1 ring-blue-600 text-white px-3 py-1.5 rounded-full shadow-md hover:bg-blue-600 transition disabled:opacity-50 text-xs"
-                  onClick={generateDocs}
-                  disabled={isLoading}
-                >
-                  <Sparkles size={14} />{" "}
-                  {isLoading ? "Generating..." : "Review"}
-                </button>
-                <button
-                  className="flex items-center gap-1.5 bg-teal-600 bg-opacity-20 ring-1 ring-teal-600 text-white px-3 py-1.5 rounded-full  shadow-md hover:bg-teal-600 transition disabled:opacity-50 text-xs"
-                  onClick={fixSyntaxErrors}
-                  disabled={isFixing}
-                >
-                  <Wrench size={14} /> {isFixing ? "Fixing..." : "Fix"}
-                </button>
-                <button
-                  className="flex items-center gap-1.5 bg-purple-600 bg-opacity-20 ring-1 ring-purple-600 text-white px-3 py-1.5 rounded-full shadow-md hover:bg-purple-600 transition text-xs"
-                  onClick={toggleExpand}
-                >
-                  {isExpanded ? (
-                    <Shrink size={14} className="transition-transform" />
-                  ) : (
-                    <Expand size={14} className="transition-transform" />
-                  )}
-                  {isExpanded ? "Collapse" : "Expand"}
-                </button>
+                  </div>
+                )}
               </div>
+
+              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+
+              {/* Action Buttons */}
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={generateDocs}
+                disabled={isLoading}
+              >
+                <Sparkles size={12} />
+                {isLoading ? "Generating..." : "Docs"}
+              </button>
+
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={fixSyntaxErrors}
+                disabled={isFixing}
+              >
+                <Wrench size={12} />
+                {isFixing ? "Fixing..." : "Fix"}
+              </button>
+
+              <button
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                onClick={toggleExpand}
+                title={isExpanded ? "Collapse" : "Expand"}
+              >
+                {isExpanded ? <Shrink size={16} /> : <Expand size={16} />}
+              </button>
+
+              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+
               <LanguageSelector language={codeLanguage} onSelect={onSelect} />
             </div>
+          </div>
 
+          {/* Monaco Editor */}
+          <div className="flex-1 relative bg-[#1e1e1e]">
             <Editor
-              height={isExpanded ? "calc(100vh - 100px)" : "92%"}
+              height="100%"
               theme={selectedTheme}
               language={getMonacoLanguage(codeLanguage)}
               defaultValue={CODE_SNIPPETS[codeLanguage]}
@@ -287,14 +297,21 @@ const fixSyntaxErrors = async () => {
                   strings: true,
                 },
                 suggestSelection: "recentlyUsed",
+                padding: { top: 16, bottom: 16 },
+                scrollBeyondLastLine: false,
+                fontFamily: "'Fira Code', monospace",
               }}
             />
-          </Box>
-          {!isExpanded && (
-            <Output editorRef={editorRef} language={codeLanguage} />
-          )}
+          </div>
         </div>
-      </Box>
+
+        {/* Output Panel */}
+        {!isExpanded && (
+          <div className="w-[30%] h-full bg-black border-l border-white/10">
+            <Output editorRef={editorRef} language={codeLanguage} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

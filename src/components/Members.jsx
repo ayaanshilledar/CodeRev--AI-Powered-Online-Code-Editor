@@ -1,19 +1,23 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { collection, doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/config/firebase";
-import { X, LogOut } from "lucide-react"; // Close & Exit Icons
+import { X, LogOut, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ShowMembers({ workspaceId }) {
+  const router = useRouter();
+  const user = auth.currentUser;
+  const membersRef = useRef(null);
+
+  // State management
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  const membersRef = useRef(null);
-  const user = auth.currentUser;
-  const router = useRouter();
 
+  // Fetch members in realtime
   useEffect(() => {
     if (!workspaceId || !user) return;
     let unsubscribe;
@@ -31,14 +35,14 @@ export default function ShowMembers({ workspaceId }) {
 
         const membersData = snapshot.docs.map((docSnap) => {
           const { userId, role, displayName, photoURL } = docSnap.data();
-          if (userId === user.uid) setUserRole(role); // Set the current user's role
+          if (userId === user.uid) setUserRole(role);
           return {
             id: userId,
             displayName: displayName || "Unknown User",
             photoURL: photoURL || "/robotic.png",
             role: role || "Member",
           };
-        })
+        });
 
         setMembers(membersData);
         setLoading(false);
@@ -49,6 +53,7 @@ export default function ShowMembers({ workspaceId }) {
     return () => unsubscribe && unsubscribe();
   }, [workspaceId, user]);
 
+  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (membersRef.current && !membersRef.current.contains(event.target)) {
@@ -72,21 +77,25 @@ export default function ShowMembers({ workspaceId }) {
 
   return (
     <div className="relative">
-      {/* Stacked Member Avatars */}
-      <div className="flex gap-2 text-sm items-center">
-       👥 People: {members.length}
-        <div className="flex -space-x-4 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+      {/* Member Count & Avatars */}
+      <div className="flex gap-2 items-center">
+        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+          <Users className="w-3.5 h-3.5" />
+          <span>{members.length}</span>
+        </div>
+
+        <div className="flex -space-x-2 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
           {members.slice(0, 4).map((member, index) => (
             <img
               key={member.id}
               src={member.photoURL || "/robotic.png"}
-              alt={""}
-              className="w-7 rounded-full border-2 border-white shadow-lg"
+              alt={member.displayName}
+              className="w-7 h-7 rounded-full border-2 border-zinc-900 hover:border-white/40 transition-all"
               style={{ zIndex: members.length - index }}
             />
           ))}
           {members.length > 4 && (
-            <div className="w-10 h-10 flex items-center justify-center bg-gray-800 text-white rounded-full border-2 border-white text-xs shadow-lg">
+            <div className="w-7 h-7 flex items-center justify-center bg-zinc-800 text-white rounded-full border-2 border-zinc-900 text-[10px] font-medium">
               +{members.length - 4}
             </div>
           )}
@@ -97,33 +106,43 @@ export default function ShowMembers({ workspaceId }) {
       {isOpen && (
         <div
           ref={membersRef}
-          className="absolute top-12 right-full bg-gray-900 p-4 rounded-lg shadow-lg w-80 z-50"
+          className="absolute top-12 right-0 bg-zinc-900/95 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-2xl w-80 z-50"
         >
-          <div className="flex justify-between items-center border-b border-gray-600 pb-2">
+          <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-3">
             <h3 className="text-white text-sm font-semibold">Workspace Members</h3>
-            <button className="text-gray-400 hover:text-white" onClick={() => setIsOpen(false)}>
-              <X className="w-5 h-5" />
+            <button
+              className="text-zinc-400 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {loading && <div className="text-gray-400 text-center mt-2">Loading...</div>}
+          {loading && <div className="text-zinc-400 text-center text-sm py-4">Loading...</div>}
 
-          <div className="mt-2 max-h-60 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto space-y-1">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center p-2 hover:bg-gray-800 rounded-md">
+              <div
+                key={member.id}
+                className="flex items-center p-2 hover:bg-zinc-800/50 rounded-lg transition-colors"
+              >
                 <img
                   src={member.photoURL || "/robotic.png"}
-                  alt={""}
-                  className="w-8 h-8 rounded-full mr-3"
+                  alt={member.displayName}
+                  className="w-8 h-8 rounded-full mr-3 border border-white/10"
                 />
                 <div className="flex-grow">
                   <p className="text-white text-sm font-medium">{member.displayName}</p>
-                  <p className="text-gray-400 text-xs">{member.role}</p>
+                  <p className="text-zinc-400 text-xs capitalize">{member.role}</p>
                 </div>
-                {/* Show Exit button only for the current user (except owner) */}
+                {/* Exit button for current user (except owner) */}
                 {member.id === user?.uid && userRole !== "owner" && (
-                  <button className="text-red-500 hover:text-red-400" onClick={exitWorkspace}>
-                    <LogOut className="w-5 h-5" />
+                  <button
+                    className="text-red-400 hover:text-red-500 transition-colors"
+                    onClick={exitWorkspace}
+                    title="Leave workspace"
+                  >
+                    <LogOut className="w-4 h-4" />
                   </button>
                 )}
               </div>

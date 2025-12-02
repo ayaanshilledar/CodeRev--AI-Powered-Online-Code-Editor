@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { executeCode } from "../api";
+import { Play, Terminal, AlertTriangle, Loader2 } from "lucide-react";
 
 const Output = ({ editorRef, language }) => {
   const [output, setOutput] = useState(null);
@@ -26,32 +27,32 @@ const Output = ({ editorRef, language }) => {
   // Generate input examples based on language and detected patterns
   const generateInputExamples = (code, lang) => {
     const examples = [];
-    
+
     if (lang === 'c' || lang === 'cpp') {
       const scanfCount = (code.match(/\bscanf\s*\(/g) || []).length;
       const cinCount = (code.match(/\bcin\s*>>/g) || []).length;
       const getlineCount = (code.match(/\bgetline\s*\(/g) || []).length;
-      
+
       if (scanfCount > 0) {
         examples.push(`// For ${scanfCount} scanf() call(s):`);
         examples.push('John');
         if (scanfCount > 1) examples.push('25');
         if (scanfCount > 2) examples.push('Engineer');
       }
-      
+
       if (cinCount > 0) {
         examples.push(`// For ${cinCount} cin >> call(s):`);
         examples.push('Alice');
         if (cinCount > 1) examples.push('30');
       }
-      
+
       if (getlineCount > 0) {
         examples.push('// For getline() calls:');
         examples.push('Hello World');
         examples.push('This is a longer string');
       }
     }
-    
+
     if (lang === 'python') {
       const inputCount = (code.match(/\binput\s*\(/g) || []).length;
       if (inputCount > 0) {
@@ -61,7 +62,7 @@ const Output = ({ editorRef, language }) => {
         if (inputCount > 2) examples.push('Developer');
       }
     }
-    
+
     if (lang === 'java') {
       const scannerCount = (code.match(/\bScanner\b/g) || []).length;
       if (scannerCount > 0) {
@@ -71,7 +72,7 @@ const Output = ({ editorRef, language }) => {
         examples.push('Software Engineer');
       }
     }
-    
+
     if (lang === 'csharp') {
       const readlineCount = (code.match(/\bConsole\.ReadLine\s*\(/g) || []).length;
       if (readlineCount > 0) {
@@ -80,7 +81,7 @@ const Output = ({ editorRef, language }) => {
         if (readlineCount > 1) examples.push('32');
       }
     }
-    
+
     return examples.join('\n');
   };
 
@@ -97,7 +98,7 @@ const Output = ({ editorRef, language }) => {
         const sourceCode = editorRef.current.getValue();
         const needsInputDetected = detectInputNeeds(sourceCode, language);
         setNeedsInput(needsInputDetected);
-        
+
         if (needsInputDetected) {
           const examples = generateInputExamples(sourceCode, language);
           setInputExamples(examples);
@@ -113,7 +114,7 @@ const Output = ({ editorRef, language }) => {
 
     // Set up interval to check for changes
     const interval = setInterval(checkInputNeeds, 1000);
-    
+
     return () => clearInterval(interval);
   }, [language]);
 
@@ -125,7 +126,7 @@ const Output = ({ editorRef, language }) => {
         const sourceCode = editor.getValue();
         const needsInputDetected = detectInputNeeds(sourceCode, language);
         setNeedsInput(needsInputDetected);
-        
+
         if (needsInputDetected) {
           const examples = generateInputExamples(sourceCode, language);
           setInputExamples(examples);
@@ -133,7 +134,7 @@ const Output = ({ editorRef, language }) => {
           setInputExamples('');
         }
       });
-      
+
       return () => disposable.dispose();
     }
   }, [language]);
@@ -164,100 +165,88 @@ const Output = ({ editorRef, language }) => {
   };
 
   return (
-    <div className=" ml-3 w-[30%] bg-black ring-1 ring-gray-700 rounded-lg shadow-lg ">
-      {/* Input Detection Alert */}
-      {needsInput && !showInput && (
-        <div className="mb-4 p-3 bg-amber-900/20 border border-amber-500/30 rounded-md">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-            <span className="text-amber-300 text-sm font-medium">
-              Input Required
-            </span>
-          </div>
-          <p className="text-amber-200 text-xs mt-1">
-            Your code contains input functions. Click "Add Input" to provide data.
-          </p>
+    <div className="w-full h-full flex flex-col bg-zinc-950">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-zinc-900/50">
+        <div className="flex items-center gap-2">
+          <Terminal size={14} className="text-zinc-400" />
+          <span className="text-xs font-medium text-zinc-300">Output</span>
         </div>
-      )}
 
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={runCode}
-          className={`flex-1 py-2 text-white ring-1 rounded-md ${
-            needsInput && !userInput.trim() 
-              ? 'bg-orange-600 hover:bg-orange-700 ring-orange-500' 
-              : 'bg-indigo-700 hover:bg-indigo-900 ring-indigo-500'
-          } bg-opacity-30`}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Compiling...' : needsInput && !userInput.trim() ? 'Run (No Input)' : 'Run Code'}
-        </button>
-        <button
-          onClick={() => setShowInput(!showInput)}
-          className={`px-3 py-2 text-white ring-1 rounded-md text-sm ${
-            needsInput 
-              ? 'bg-amber-600 hover:bg-amber-700 ring-amber-500' 
-              : 'bg-gray-600 hover:bg-gray-700 ring-gray-500'
-          }`}
-        >
-          {showInput ? 'Hide Input' : needsInput ? 'Add Input ⚠️' : 'Add Input'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowInput(!showInput)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all border ${needsInput
+                ? 'bg-zinc-800 text-amber-400 border-amber-500/30 hover:bg-zinc-700'
+                : 'bg-zinc-800 text-zinc-300 border-white/10 hover:bg-zinc-700 hover:text-white'
+              }`}
+          >
+            {showInput ? 'Hide Input' : needsInput ? 'Add Input ⚠️' : 'Input'}
+          </button>
+
+          <button
+            onClick={runCode}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black hover:bg-zinc-200 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+            {isLoading ? 'Running...' : 'Run'}
+          </button>
+        </div>
       </div>
 
+      {/* Input Section */}
       {showInput && (
-        <div className="mb-4">
+        <div className="p-4 border-b border-white/10 bg-zinc-900/30">
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm text-gray-300">
-              Program Input (stdin):
+            <label className="text-xs font-medium text-zinc-400">
+              Standard Input (stdin)
             </label>
             {needsInput && (
-              <span className="text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded">
+              <span className="text-[10px] text-amber-400 bg-amber-900/20 px-2 py-0.5 rounded border border-amber-500/20">
                 Required
               </span>
             )}
           </div>
-          
+
           <textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder={needsInput ? "Enter input for your program..." : "Enter input for your program..."}
-            className={`w-full h-20 px-3 py-2 bg-gray-800 text-white border rounded-md resize-none focus:outline-none focus:ring-2 text-sm ${
-              needsInput && !userInput.trim() 
-                ? 'border-amber-500 focus:ring-amber-500' 
-                : 'border-gray-600 focus:ring-indigo-500'
-            }`}
+            placeholder={needsInput ? "Enter input for your program..." : "Enter input here..."}
+            className={`w-full h-24 px-3 py-2 bg-zinc-900 text-zinc-200 border rounded-lg resize-none focus:outline-none focus:ring-1 text-xs font-mono ${needsInput && !userInput.trim()
+                ? 'border-amber-500/50 focus:border-amber-500 focus:ring-amber-500/20'
+                : 'border-white/10 focus:border-white/20 focus:ring-white/10'
+              }`}
           />
-          
+
           {/* Input Examples */}
           {inputExamples && (
-            <div className="mt-2 p-2 bg-gray-800/50 border border-gray-600 rounded text-xs">
-              <div className="text-gray-400 mb-1">Example input format:</div>
-              <pre className="text-green-400 whitespace-pre-wrap">{inputExamples}</pre>
+            <div className="mt-2 p-2 bg-zinc-900/50 border border-white/5 rounded text-[10px] font-mono">
+              <div className="text-zinc-500 mb-1">Example input format:</div>
+              <pre className="text-zinc-300 whitespace-pre-wrap">{inputExamples}</pre>
             </div>
           )}
-          
-          <p className="text-xs text-gray-400 mt-1">
-            {needsInput 
-              ? "⚠️ Your program requires input. Provide data above or the program may hang."
-              : "This input will be provided to your program when it requests user input."
-            }
-          </p>
         </div>
       )}
-      
-      <div
-        className={` p-4 rounded-md overflow-auto h-[90%] ${isError ? 'border-red-500 text-red-500' : ' text-white'} `}
-      >
+
+      {/* Output Display */}
+      <div className="flex-1 overflow-auto p-4 font-mono text-sm">
         {isLoading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="w-16 h-16 border-4 border-t-teal-500 border-transparent rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-3">
+            <Loader2 size={24} className="animate-spin" />
+            <span className="text-xs">Compiling and running...</span>
           </div>
         ) : output ? (
-          output.map((line, i) => (
-            <p key={i} className="text-sm whitespace-pre-wrap overflow-auto">{line}</p>
-          ))
+          <div className={`space-y-1 ${isError ? 'text-red-400' : 'text-zinc-300'}`}>
+            {output.map((line, i) => (
+              <p key={i} className="whitespace-pre-wrap break-words">{line}</p>
+            ))}
+          </div>
         ) : (
-          <p className="text-gray-400">Click "Run Code" to see the output here</p>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-600 gap-2">
+            <Terminal size={24} className="opacity-50" />
+            <p className="text-xs">Run code to see output</p>
+          </div>
         )}
       </div>
     </div>

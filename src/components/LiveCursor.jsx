@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { getDatabase, ref, set, onValue, remove } from "firebase/database";
 import { useAuth } from "@/context/AuthProvider";
-import { rtdb } from "@/config/firebase"; // Import Realtime Database
+import { rtdb } from "@/config/firebase";
 
 const LiveCursor = ({ workspaceId }) => {
   const { user } = useAuth();
   const [cursors, setCursors] = useState({});
-  
+
   useEffect(() => {
     if (!user || !workspaceId) return;
 
@@ -54,32 +54,41 @@ const LiveCursor = ({ workspaceId }) => {
   }, [workspaceId]);
 
   return (
-    <div>
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
       {Object.entries(cursors).map(([userId, cursor]) =>
         userId !== user?.uid && cursor ? (
           <div
             key={userId}
-            className="absolute transition-all duration-75 ease-out"
+            className="absolute transition-all duration-100 ease-linear will-change-transform"
             style={{
-              left: cursor?.x || 0, // Fallback to 0 if undefined
-              top: cursor?.y || 0, // Fallback to 0 if undefined
+              left: 0,
+              top: 0,
+              transform: `translate(${cursor.x}px, ${cursor.y}px)`,
             }}
           >
             {/* Cursor SVG */}
-           
+            <svg
+              className="w-4 h-4 drop-shadow-md"
+              viewBox="0 0 24 24"
+              fill={cursor?.color || "#ffffff"}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z"
+                stroke="white"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
 
             {/* User Display Name */}
-            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-gray-700 text-white px-2 py-1 rounded shadow-md">
-                <svg
-                className="absolute w-8 h-8 -top-6 left-1/2 -translate-x-1/2"
-                viewBox="0 0 24 24"
-                fill={cursor?.color || "#ffffff"}
-                xmlns="http://www.w3.org/2000/svg"
-                >
-                <path d="M4 4L20 12L12 20L4 4Z" />
-                </svg>
-              {cursor?.displayName || "Anonymous"}
-            </span>
+            <div
+              className="absolute left-4 top-4 px-2 py-1 rounded-md text-[10px] font-medium text-white shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ backgroundColor: cursor?.color || "#000" }}
+            >
+              {cursor?.displayName || "User"}
+            </div>
           </div>
         ) : null
       )}
