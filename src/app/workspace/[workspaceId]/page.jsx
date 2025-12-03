@@ -120,12 +120,7 @@ const Workspace = () => {
                   <ShowMembers workspaceId={workspaceId} />
                 </div>
 
-                {/* Invite Button */}
-                <button
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-zinc-900/60 backdrop-blur-sm border border-white/10 hover:bg-zinc-800/60 hover:border-white/20 rounded-lg transition-all"
-                >
-                  Invite
-                </button>
+          
               </div>
             </div>
 
@@ -177,8 +172,7 @@ const Workspace = () => {
           <LiveCursor workspaceId={workspaceId} />
         </div>
 
-        {/* Voice Chat - Disabled as per user preference */}
-        {/* <VoiceChat workspaceId={workspaceId} /> */}
+       
       </div>
     </WorkspaceStateProvider>
   );

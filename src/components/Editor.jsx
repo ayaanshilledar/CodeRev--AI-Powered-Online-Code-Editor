@@ -279,7 +279,7 @@ export default function CodeEditor({ file }) {
               </button>
 
               <button
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 hidden text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 onClick={toggleExpand}
                 title={isExpanded ? "Collapse" : "Expand"}
               >
