@@ -39,6 +39,21 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const navLinks = [
+    { label: "Features", href: "#features" },
+    { label: "How It Works", href: "#howitworks" },
+    { label: "Testimonials", href: "#testimonials" },
+  ];
+
+  const scrollToSection = (href) => {
+    const id = href.replace("#", "");
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? "bg-black/70 backdrop-blur-xl border-b border-white/5" : "bg-transparent"
@@ -57,15 +72,15 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          {["Features", "Pricing", "Docs"].map((item) => (
-            <Link
-              key={item}
-              href={`#${item.toLowerCase()}`}
+          {navLinks.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => scrollToSection(item.href)}
               className="text-sm font-medium text-zinc-400 hover:text-white transition-colors relative group"
             >
-              {item}
+              {item.label}
               <span className="absolute -bottom-1 left-0 w-0 h-px bg-white transition-all duration-300 group-hover:w-full" />
-            </Link>
+            </button>
           ))}
         </div>
 
@@ -82,24 +97,28 @@ const Navbar = () => {
           </Link>
         </div>
 
-        <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+        <button
+          className="md:hidden text-white"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+          aria-expanded={isMobileMenuOpen}
+        >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {isMobileMenuOpen && (
         <div className="md:hidden bg-black/95 backdrop-blur-2xl border-t border-white/5 p-6 flex flex-col gap-4">
-          {["Features", "Pricing", "Docs"].map((item) => (
-            <Link
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="text-sm text-zinc-300 hover:text-white transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+          {navLinks.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => scrollToSection(item.href)}
+              className="text-sm text-zinc-300 hover:text-white transition-colors text-left"
             >
-              {item}
-            </Link>
+              {item.label}
+            </button>
           ))}
-          <div className="flex flex-col gap-3 mt-2">
+          <div className="flex flex-col gap-3 mt-2 border-t border-white/10 pt-4">
             <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
               <Button className="w-full h-10 border border-white/10 text-white bg-white/5 hover:bg-white/10">
                 Log in
@@ -357,7 +376,7 @@ const Stats = () => {
   ];
 
   return (
-    <section className="relative py-20 px-6 border-y border-white/5">
+    <section className="relative hidden py-20 px-6 border-y border-white/5">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent" />
 
       <div className="relative max-w-7xl mx-auto">
@@ -463,7 +482,7 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="relative py-24 px-6 border-t border-white/5">
+    <section id="testimonials" className="relative py-24 px-6 border-t border-white/5">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent" />
 
       <div className="relative max-w-7xl mx-auto">
@@ -544,7 +563,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section className="relative py-24 px-6">
+    <section id="howitworks" className="relative py-24 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-zinc-400 mb-6">
