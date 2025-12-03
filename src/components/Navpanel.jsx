@@ -16,11 +16,16 @@ import {
   Trash,
   ChevronDown,
   ChevronRight,
+  Menu,
+  RotateCcw,
+  RotateCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useWorkspaceState } from "@/context/WorkspaceStateContext";
 
 const NavPanel = ({ workspaceId, openFile }) => {
   const router = useRouter();
+  const { canUndo, canRedo, undo, redo } = useWorkspaceState();
 
   // State management
   const [folders, setFolders] = useState([]);
@@ -32,6 +37,7 @@ const NavPanel = ({ workspaceId, openFile }) => {
   const [creatingParentFolderId, setCreatingParentFolderId] = useState(null);
   const [newItemName, setNewItemName] = useState("");
   const [renamingItem, setRenamingItem] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Utility function
   const truncateName = (name) => {
@@ -351,120 +357,151 @@ const NavPanel = ({ workspaceId, openFile }) => {
 
   return (
     <div className="bg-transparent text-zinc-300 h-full w-full flex flex-col">
-      <div className="p-4 border-b border-white/10">
-        <h2 className="text-xs font-semibold mb-4 text-zinc-400 tracking-wider">
-          FILE EXPLORER
-        </h2>
-        <div className="flex gap-2">
-          {(userRole === "contributor" || userRole === "owner") && (
-            <>
-              <button
-                onClick={() => {
-                  setCreatingParentFolderId(null);
-                  setNewItemName("");
-                  setCreatingType((prev) =>
-                    prev === "folder" ? null : "folder"
-                  );
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-white/10 hover:bg-zinc-800 hover:border-white/20 rounded-lg text-xs font-medium transition-all"
-              >
-                <Folder size={14} className="text-zinc-400" />
-                Folder
-              </button>
-              <button
-                onClick={() => {
-                  setCreatingParentFolderId(null);
-                  setNewItemName("");
-                  setCreatingType((prev) => (prev === "file" ? null : "file"));
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-white/10 hover:bg-zinc-800 hover:border-white/20 rounded-lg text-xs font-medium transition-all"
-              >
-                <File size={14} className="text-zinc-400" />
-                File
-              </button>
-            </>
-          )}
+      <div className="p-4 border-b border-white/10 relative z-50">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-semibold text-zinc-400 tracking-wider">
+            FILE EXPLORER
+          </h2>
+          <div className="flex items-center gap-1.5 relative z-50">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors relative z-50"
+              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              <Menu size={14} className="text-zinc-400" />
+            </button>
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-50"
+              title="Undo (Ctrl+Z)"
+            >
+              <RotateCcw size={14} className="text-zinc-400" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-50"
+              title="Redo (Ctrl+Y)"
+            >
+              <RotateCw size={14} className="text-zinc-400" />
+            </button>
+          </div>
         </div>
-      </div>
-
-      <div
-        className="flex-1 overflow-y-auto py-2 px-2"
-        onDragOver={(e) => handleDragOver(e, null)}
-        onDrop={(e) => handleDrop(e, null)}
-      >
-        {creatingType && !creatingParentFolderId && (
-          <div className="flex items-center px-2 py-1 mb-2">
-            <input
-              className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none flex-1"
-              placeholder={`New ${creatingType} name`}
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              onBlur={createItem}
-              onKeyPress={(e) => e.key === "Enter" && createItem()}
-              autoFocus
-            />
+        {sidebarOpen && (
+          <div className="flex gap-2">
+            {(userRole === "contributor" || userRole === "owner") && (
+              <>
+                <button
+                  onClick={() => {
+                    setCreatingParentFolderId(null);
+                    setNewItemName("");
+                    setCreatingType((prev) =>
+                      prev === "folder" ? null : "folder"
+                    );
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-white/10 hover:bg-zinc-800 hover:border-white/20 rounded-lg text-xs font-medium transition-all"
+                >
+                  <Folder size={14} className="text-zinc-400" />
+                  Folder
+                </button>
+                <button
+                  onClick={() => {
+                    setCreatingParentFolderId(null);
+                    setNewItemName("");
+                    setCreatingType((prev) => (prev === "file" ? null : "file"));
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-white/10 hover:bg-zinc-800 hover:border-white/20 rounded-lg text-xs font-medium transition-all"
+                >
+                  <File size={14} className="text-zinc-400" />
+                  File
+                </button>
+              </>
+            )}
           </div>
         )}
+      </div>
 
-        {folders
-          .filter((folder) => !folder.parentFolderId)
-          .map((folder) => renderFolder(folder))}
+      {sidebarOpen && (
+        <div
+          className="flex-1 overflow-y-auto py-2 px-2 relative z-40"
+          onDragOver={(e) => handleDragOver(e, null)}
+          onDrop={(e) => handleDrop(e, null)}
+        >
+          {creatingType && !creatingParentFolderId && (
+            <div className="flex items-center px-2 py-1 mb-2">
+              <input
+                className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none flex-1"
+                placeholder={`New ${creatingType} name`}
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                onBlur={createItem}
+                onKeyPress={(e) => e.key === "Enter" && createItem()}
+                autoFocus
+              />
+            </div>
+          )}
 
-        {files
-          .filter((file) => !file.folderId)
-          .map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center justify-between group hover:bg-zinc-800/50 px-2 py-1.5 rounded transition-colors"
-              draggable
-              onDragStart={(e) => handleDragStart(e, file, "file")}
-              onDragOver={(e) => handleDragOver(e, null)}
-              onDrop={(e) => handleDrop(e, null)}
-            >
+          {folders
+            .filter((folder) => !folder.parentFolderId)
+            .map((folder) => renderFolder(folder))}
+
+          {files
+            .filter((file) => !file.folderId)
+            .map((file) => (
               <div
-                className="flex items-center cursor-pointer flex-1 border-l border-white/5 ml-1 px-2 py-1"
-                onClick={() => openFile(file)}
+                key={file.id}
+                className="flex items-center justify-between group hover:bg-zinc-800/50 px-2 py-1.5 rounded transition-colors"
+                draggable
+                onDragStart={(e) => handleDragStart(e, file, "file")}
+                onDragOver={(e) => handleDragOver(e, null)}
+                onDrop={(e) => handleDrop(e, null)}
               >
-                <File size={14} className="mr-2 text-zinc-400" />
-                {renamingItem?.id === file.id ? (
-                  <input
-                    className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none"
-                    value={renamingItem.name}
-                    onChange={(e) =>
-                      setRenamingItem({ ...renamingItem, name: e.target.value })
-                    }
-                    onBlur={renameItem}
-                    onKeyPress={(e) => e.key === "Enter" && renameItem()}
-                    autoFocus
+                <div
+                  className="flex items-center cursor-pointer flex-1 border-l border-white/5 ml-1 px-2 py-1"
+                  onClick={() => openFile(file)}
+                >
+                  <File size={14} className="mr-2 text-zinc-400" />
+                  {renamingItem?.id === file.id ? (
+                    <input
+                      className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none"
+                      value={renamingItem.name}
+                      onChange={(e) =>
+                        setRenamingItem({ ...renamingItem, name: e.target.value })
+                      }
+                      onBlur={renameItem}
+                      onKeyPress={(e) => e.key === "Enter" && renameItem()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="text-xs text-zinc-300"
+                      onDoubleClick={() =>
+                        setRenamingItem({
+                          id: file.id,
+                          name: file.name,
+                          type: "file",
+                        })
+                      }
+                    >
+                      {truncateName(file.name)}
+                    </span>
+                  )}
+                </div>
+                {(userRole === "contributor" || userRole === "owner") && (
+                  <Trash
+                    size={12}
+                    className="text-zinc-400 hover:text-red-400 cursor-pointer opacity-0 group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteItem("files", file.id);
+                    }}
                   />
-                ) : (
-                  <span
-                    className="text-xs text-zinc-300"
-                    onDoubleClick={() =>
-                      setRenamingItem({
-                        id: file.id,
-                        name: file.name,
-                        type: "file",
-                      })
-                    }
-                  >
-                    {truncateName(file.name)}
-                  </span>
                 )}
               </div>
-              {(userRole === "contributor" || userRole === "owner") && (
-                <Trash
-                  size={12}
-                  className="text-zinc-400 hover:text-red-400 cursor-pointer opacity-0 group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteItem("files", file.id);
-                  }}
-                />
-              )}
-            </div>
-          ))}
-      </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 };
