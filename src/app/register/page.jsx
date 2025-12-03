@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import Image from "next/image";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -105,9 +106,13 @@ export default function SignUpPage() {
         <CardHeader className="text-center pb-4">
           {/* Logo */}
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-white flex items-center justify-center text-black font-bold text-lg rounded-xl">
-              C
-            </div>
+            <Image
+              src="/CodeRev_Logo.png"
+              alt="CodeRev Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12 object-contain"
+            />
           </div>
           <CardTitle className="text-3xl font-bold text-white">Create Account</CardTitle>
           <p className="text-sm text-zinc-400 mt-2">Join CodeRev and start coding today</p>

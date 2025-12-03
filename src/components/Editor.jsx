@@ -236,6 +236,30 @@ export default function CodeEditor({ file }) {
 
               <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
+              {/* Undo/Redo Buttons */}
+              <button
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => editorRef.current?.trigger('keyboard', 'undo')}
+                title="Undo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7v6h6" />
+                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                </svg>
+              </button>
+              <button
+                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => editorRef.current?.trigger('keyboard', 'redo')}
+                title="Redo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 7v6h-6" />
+                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+                </svg>
+              </button>
+
+              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+
               {/* Action Buttons */}
               <button
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -245,7 +269,6 @@ export default function CodeEditor({ file }) {
                 <Sparkles size={12} />
                 {isLoading ? "Generating..." : "Docs"}
               </button>
-
               <button
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={fixSyntaxErrors}

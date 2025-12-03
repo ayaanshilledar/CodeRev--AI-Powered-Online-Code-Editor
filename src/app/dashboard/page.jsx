@@ -329,8 +329,8 @@ const Dashboard = () => {
               <div className="flex gap-3">
                 <Button
                   className={`flex-1 items-center gap-2 h-11 rounded-lg font-medium transition-all ${isPublic
-                      ? "bg-white text-black hover:bg-zinc-200"
-                      : "bg-zinc-800/50 text-zinc-400 border border-white/10 hover:bg-zinc-800 hover:text-white"
+                    ? "bg-white text-black hover:bg-zinc-200"
+                    : "bg-zinc-800/50 text-zinc-400 border border-white/10 hover:bg-zinc-800 hover:text-white"
                     }`}
                   onClick={() => setIsPublic(true)}
                 >
@@ -340,8 +340,8 @@ const Dashboard = () => {
 
                 <Button
                   className={`flex-1 items-center gap-2 h-11 rounded-lg font-medium transition-all ${!isPublic
-                      ? "bg-white text-black hover:bg-zinc-200"
-                      : "bg-zinc-800/50 text-zinc-400 border border-white/10 hover:bg-zinc-800 hover:text-white"
+                    ? "bg-white text-black hover:bg-zinc-200"
+                    : "bg-zinc-800/50 text-zinc-400 border border-white/10 hover:bg-zinc-800 hover:text-white"
                     }`}
                   onClick={() => setIsPublic(false)}
                 >

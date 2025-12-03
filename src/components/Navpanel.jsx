@@ -118,7 +118,7 @@ const NavPanel = ({ workspaceId, openFile }) => {
     setDraggedItem(null);
   };
 
-  const createItem = async (folderid) => {
+  const createItem = async (folderId) => {
     if (!newItemName) return;
 
     try {
@@ -137,7 +137,11 @@ const NavPanel = ({ workspaceId, openFile }) => {
       setNewItemName("");
       setCreatingType(null);
       setCreatingParentFolderId(null);
-      setFolderStates({ ...folderStates, [folderid]: true });
+
+      // Open the folder where item was created
+      if (folderId) {
+        setFolderStates((prev) => ({ ...prev, [folderId]: true }));
+      }
     } catch (error) {
       console.error("Error creating item:", error);
     }
@@ -147,7 +151,8 @@ const NavPanel = ({ workspaceId, openFile }) => {
     if (!renamingItem?.name) return;
 
     try {
-      const collectionName = renamingItem.type === "folder" ? "folders" : "files";
+      const collectionName =
+        renamingItem.type === "folder" ? "folders" : "files";
       await updateDoc(
         doc(db, `workspaces/${workspaceId}/${collectionName}/${renamingItem.id}`),
         { name: renamingItem.name }
@@ -161,12 +166,14 @@ const NavPanel = ({ workspaceId, openFile }) => {
   const deleteItem = async (type, id) => {
     if (type === "folders") {
       await deleteDoc(doc(db, `workspaces/${workspaceId}/folders/${id}`));
+
       const nestedFolders = folders.filter(
         (folder) => folder.parentFolderId === id
       );
       for (const nestedFolder of nestedFolders) {
         await deleteItem("folders", nestedFolder.id);
       }
+
       const folderFiles = files.filter((file) => file.folderId === id);
       for (const file of folderFiles) {
         await deleteDoc(doc(db, `workspaces/${workspaceId}/files/${file.id}`));
@@ -196,16 +203,17 @@ const NavPanel = ({ workspaceId, openFile }) => {
             onClick={() => toggleFolder(folder.id)}
           >
             {folderStates[folder.id] ? (
-              <ChevronDown size={14} className="mr-1 text-zinc-400" />
+              <ChevronDown size={14} className="mr-1 text-zinc-400 flex-shrink-0" />
             ) : (
-              <ChevronRight size={14} className="mr-1 text-zinc-400" />
+              <ChevronRight size={14} className="mr-1 text-zinc-400 flex-shrink-0" />
             )}
-            <Folder size={14} className="mr-2 text-zinc-400" />
-            {renamingItem?.id === folder.id ? (
+            <Folder size={14} className="mr-2 text-zinc-400 flex-shrink-0" />            {renamingItem?.id === folder.id ? (
               <input
                 className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none"
                 value={renamingItem.name}
-                onChange={(e) => setRenamingItem({ ...renamingItem, name: e.target.value })}
+                onChange={(e) =>
+                  setRenamingItem({ ...renamingItem, name: e.target.value })
+                }
                 onBlur={renameItem}
                 onKeyPress={(e) => e.key === "Enter" && renameItem()}
                 autoFocus
@@ -213,7 +221,13 @@ const NavPanel = ({ workspaceId, openFile }) => {
             ) : (
               <span
                 className="text-xs text-zinc-300"
-                onDoubleClick={() => setRenamingItem({ id: folder.id, name: folder.name, type: "folder" })}
+                onDoubleClick={() =>
+                  setRenamingItem({
+                    id: folder.id,
+                    name: folder.name,
+                    type: "folder",
+                  })
+                }
               >
                 {truncateName(folder.name)}
               </span>
@@ -227,10 +241,12 @@ const NavPanel = ({ workspaceId, openFile }) => {
                 className="text-zinc-400 hover:text-white cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCreatingType((prev) => (prev === "folder" ? null : "folder"));
+                  setCreatingType((prev) =>
+                    prev === "folder" ? null : "folder"
+                  );
                   setCreatingParentFolderId(folder.id);
                   setNewItemName("");
-                  setFolderStates({ ...folderStates, [folder.id]: true });
+                  setFolderStates((prev) => ({ ...prev, [folder.id]: true }));
                 }}
               />
               <File
@@ -241,7 +257,7 @@ const NavPanel = ({ workspaceId, openFile }) => {
                   setCreatingType((prev) => (prev === "file" ? null : "file"));
                   setCreatingParentFolderId(folder.id);
                   setNewItemName("");
-                  setFolderStates({ ...folderStates, [folder.id]: true });
+                  setFolderStates((prev) => ({ ...prev, [folder.id]: true }));
                 }}
               />
               <Trash
@@ -265,7 +281,7 @@ const NavPanel = ({ workspaceId, openFile }) => {
                   placeholder={`New ${creatingType} name`}
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  onBlur={createItem}
+                  onBlur={() => createItem(folder.id)}
                   onKeyPress={(e) => e.key === "Enter" && createItem(folder.id)}
                   autoFocus
                 />
@@ -290,7 +306,12 @@ const NavPanel = ({ workspaceId, openFile }) => {
                     <input
                       className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none"
                       value={renamingItem.name}
-                      onChange={(e) => setRenamingItem({ ...renamingItem, name: e.target.value })}
+                      onChange={(e) =>
+                        setRenamingItem({
+                          ...renamingItem,
+                          name: e.target.value,
+                        })
+                      }
                       onBlur={renameItem}
                       onKeyPress={(e) => e.key === "Enter" && renameItem()}
                       autoFocus
@@ -298,7 +319,13 @@ const NavPanel = ({ workspaceId, openFile }) => {
                   ) : (
                     <span
                       className="text-xs text-zinc-300"
-                      onDoubleClick={() => setRenamingItem({ id: file.id, name: file.name, type: "file" })}
+                      onDoubleClick={() =>
+                        setRenamingItem({
+                          id: file.id,
+                          name: file.name,
+                          type: "file",
+                        })
+                      }
                     >
                       {truncateName(file.name)}
                     </span>
@@ -325,7 +352,9 @@ const NavPanel = ({ workspaceId, openFile }) => {
   return (
     <div className="bg-transparent text-zinc-300 h-full w-full flex flex-col">
       <div className="p-4 border-b border-white/10">
-        <h2 className="text-xs font-semibold mb-4 text-zinc-400 tracking-wider">FILE EXPLORER</h2>
+        <h2 className="text-xs font-semibold mb-4 text-zinc-400 tracking-wider">
+          FILE EXPLORER
+        </h2>
         <div className="flex gap-2">
           {(userRole === "contributor" || userRole === "owner") && (
             <>
@@ -333,7 +362,9 @@ const NavPanel = ({ workspaceId, openFile }) => {
                 onClick={() => {
                   setCreatingParentFolderId(null);
                   setNewItemName("");
-                  setCreatingType((prev) => (prev === "folder" ? null : "folder"));
+                  setCreatingType((prev) =>
+                    prev === "folder" ? null : "folder"
+                  );
                 }}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 border border-white/10 hover:bg-zinc-800 hover:border-white/20 rounded-lg text-xs font-medium transition-all"
               >
@@ -399,7 +430,9 @@ const NavPanel = ({ workspaceId, openFile }) => {
                   <input
                     className="text-xs bg-zinc-800 text-white px-2 py-1 rounded border border-white/10 focus:border-white/30 outline-none"
                     value={renamingItem.name}
-                    onChange={(e) => setRenamingItem({ ...renamingItem, name: e.target.value })}
+                    onChange={(e) =>
+                      setRenamingItem({ ...renamingItem, name: e.target.value })
+                    }
                     onBlur={renameItem}
                     onKeyPress={(e) => e.key === "Enter" && renameItem()}
                     autoFocus
@@ -407,7 +440,13 @@ const NavPanel = ({ workspaceId, openFile }) => {
                 ) : (
                   <span
                     className="text-xs text-zinc-300"
-                    onDoubleClick={() => setRenamingItem({ id: file.id, name: file.name, type: "file" })}
+                    onDoubleClick={() =>
+                      setRenamingItem({
+                        id: file.id,
+                        name: file.name,
+                        type: "file",
+                      })
+                    }
                   >
                     {truncateName(file.name)}
                   </span>

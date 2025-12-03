@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
@@ -14,9 +13,9 @@ import Header from "@/components/Header";
 import ShowMembers from "@/components/Members";
 import LiveCursor from "@/components/LiveCursor";
 import NavPanel from "@/components/Navpanel";
+import VoiceChat from "@/components/VoiceChat";
 
 const Workspace = () => {
-  // Router params
   const { workspaceId } = useParams();
 
   // State management
@@ -25,28 +24,40 @@ const Workspace = () => {
   const [membersCount, setMembersCount] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Fetch workspace data
   useEffect(() => {
     const fetchWorkspace = async () => {
-      if (!workspaceId) return;
+      if (!workspaceId) {
+        setError("No workspace ID provided");
+        setIsLoading(false);
+        return;
+      }
 
       try {
+        setIsLoading(true);
+        setError(null);
+
         const workspaceRef = doc(db, "workspaces", workspaceId);
         const workspaceSnap = await getDoc(workspaceRef);
 
         if (workspaceSnap.exists()) {
           const workspaceData = workspaceSnap.data();
-          setWorkspaceName(workspaceData.name);
+          setWorkspaceName(workspaceData.name || "Untitled Workspace");
 
           const membersRef = collection(db, `workspaces/${workspaceId}/members`);
           const membersSnap = await getDocs(membersRef);
           setMembersCount(membersSnap.size);
         } else {
-          console.error("Workspace not found");
+          setError("Workspace not found");
         }
-      } catch (error) {
-        console.error("Error fetching workspace:", error);
+      } catch (err) {
+        console.error("Error fetching workspace:", err);
+        setError("Failed to load workspace. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -59,27 +70,27 @@ const Workspace = () => {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]" />
 
       {/* Header */}
-      <div className="relative z-10">
+      <div className="relative z-40">
         <Header workspaceId={workspaceId} />
       </div>
 
       <div className="relative z-10 flex flex-1 overflow-hidden">
-        {/* File Panel Toggle Button */}
+        {/* File Panel Toggle */}
         <button
-          className="absolute top-2 left-4 z-20 p-2 hover:bg-zinc-800/50 rounded-lg transition-colors"
+          className="absolute top-4 left-4 z-30 p-2 bg-zinc-900/60 backdrop-blur-sm border border-white/10 hover:bg-zinc-800/60 rounded-lg transition-all"
           onClick={() => setIsNavOpen(!isNavOpen)}
-          aria-label="Toggle file panel"
+          aria-label={isNavOpen ? "Close file panel" : "Open file panel"}
         >
           <PanelLeftOpen
-            size={24}
-            className="h-6 w-6 text-zinc-400 hover:text-white transition-colors"
+            size={20}
+            className="text-zinc-400 hover:text-white transition-colors"
           />
         </button>
 
         {/* Left Side - File & Folder Panel */}
         <nav
-          className={`transition-all duration-300 ${isNavOpen ? "w-[20%]" : "w-0"
-            } overflow-hidden bg-zinc-900/50 backdrop-blur-sm border-r border-white/10 flex flex-col h-full`}
+          className={`relative transition-all duration-300 ${isNavOpen ? "w-[280px]" : "w-0"
+            } overflow-hidden bg-zinc-900/40 backdrop-blur-md border-r border-white/5 flex flex-col h-full`}
         >
           {isNavOpen && (
             <NavPanel workspaceId={workspaceId} openFile={setSelectedFile} />
@@ -87,37 +98,58 @@ const Workspace = () => {
         </nav>
 
         {/* Main - Editor Content */}
-        <main className="flex-1 h-full flex flex-col py-2 overflow-auto">
+        <main className="flex-1 h-full flex flex-col">
           {/* Workspace Header */}
-          <div className="flex h-[6%] gap-12 items-center justify-between px-6">
-            <h1 className="text-xl w-[80%] text-center font-medium text-zinc-300">
-              Workspace: <span className="text-white font-semibold">{workspaceName}</span>
+          <div className="relative z-40 flex items-center justify-between px-6 py-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-sm">
+            <h1 className="text-sm font-medium text-zinc-400 flex-1 text-center">
+              <span className="text-zinc-500">Workspace:</span>{" "}
+              <span className="text-white">
+                {error ? "Error" : isLoading ? "Loading..." : workspaceName}
+              </span>
             </h1>
 
-            <div className="flex items-center gap-4">
-              {/* Search Bar - Hidden for now */}
-              <div className="hidden items-start bg-zinc-800/40 ring-1 ring-white/20 px-4 py-1 rounded-lg gap-2">
+            <div className="flex items-center gap-3">
+              {/* Search Bar */}
+              <div className="bg-zinc-900/40 backdrop-blur-sm border border-white/10 px-3 py-1.5 rounded-lg hover:border-white/20 transition-colors">
                 <SearchBar workspaceId={workspaceId} />
               </div>
 
-              {/* Members Count - Hidden for now */}
-              <span className="hidden text-sm text-zinc-200 bg-zinc-800/50 px-4 py-2 rounded-full items-center justify-center gap-3 border border-white/10">
+              {/* Members Count */}
+              <div className="bg-zinc-900/40 backdrop-blur-sm border border-white/10 px-3 py-1.5 rounded-lg">
                 <ShowMembers workspaceId={workspaceId} />
-              </span>
+              </div>
+
+              {/* Invite Button */}
+              <button
+                className="px-3 py-1.5 text-xs font-medium text-white bg-zinc-900/60 backdrop-blur-sm border border-white/10 hover:bg-zinc-800/60 hover:border-white/20 rounded-lg transition-all"
+              >
+                Invite
+              </button>
             </div>
           </div>
 
-          {/* Code Editor */}
-          <div className="flex-1 overflow-hidden">
-            <Editor file={selectedFile} />
-          </div>
+          {/* Error State */}
+          {error && (
+            <div className="flex items-center justify-center p-8">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400 text-sm max-w-md">
+                {error}
+              </div>
+            </div>
+          )}
+
+          {/* Editor */}
+          {!error && (
+            <div className="flex-1 overflow-auto">
+              <Editor file={selectedFile} />
+            </div>
+          )}
         </main>
       </div>
 
-      {/* Chat Panel (Overlapping from Bottom) */}
+      {/* Chat Panel */}
       <aside
-        className={`fixed bottom-0 right-0 transition-all duration-300 shadow-2xl ${isChatOpen ? "h-[82%]" : "h-0"
-          } overflow-hidden w-[45%] border-l border-t border-white/10 bg-zinc-900/95 backdrop-blur-xl z-40`}
+        className={`fixed bottom-0 right-0 transition-all duration-300 shadow-2xl ${isChatOpen ? "h-[80%]" : "h-0"
+          } overflow-hidden w-[45%] bg-zinc-900/50 backdrop-blur-xl border-l border-t border-white/10 z-30`}
       >
         {isChatOpen && (
           <Chat
@@ -131,19 +163,21 @@ const Workspace = () => {
       {/* Chat Toggle Button */}
       {!isChatOpen && (
         <button
-          className="fixed bottom-6 right-10 z-30 py-3 font-medium px-5 flex items-center gap-2 text-base bg-white text-black hover:bg-zinc-200 rounded-full shadow-2xl transition-all hover:scale-105"
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          aria-label="Open AI Chat"
+          className="fixed bottom-8 right-8 z-40 py-3 px-5 flex items-center gap-2 bg-zinc-900/80 backdrop-blur-sm border border-white/10 hover:bg-zinc-800/80 text-white rounded-lg shadow-lg hover:scale-105 transition-all"
+          onClick={() => setIsChatOpen(true)}
+          aria-label="Open AI Assistant"
         >
-          <MessageCircle className="h-5 w-5" />
-          AI Chat
+          <MessageCircle className="h-5 w-5" /> AI Assistant
         </button>
       )}
 
       {/* Live Cursor */}
-      <div className="relative z-50">
+      <div className="pointer-events-none fixed inset-0 z-50">
         <LiveCursor workspaceId={workspaceId} />
       </div>
+
+      {/* Voice Chat - Disabled as per user preference */}
+      {/* <VoiceChat workspaceId={workspaceId} /> */}
     </div>
   );
 };

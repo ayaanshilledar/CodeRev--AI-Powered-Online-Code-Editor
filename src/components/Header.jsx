@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -69,9 +70,8 @@ const Header = ({ workspaceId }) => {
     <header className="flex items-center justify-between px-8 py-4 bg-zinc-900/50 backdrop-blur-xl border-b border-white/10 shadow-lg">
       {/* Logo & Title */}
       <Link href="/dashboard" className="flex items-center gap-3 group">
-        <div className="w-8 h-8 bg-white flex items-center justify-center text-black font-bold text-sm rounded-lg group-hover:scale-105 transition-transform">
-          C
-        </div>
+   
+
         <h1 className="text-xl font-semibold text-white">
           CodeRev
         </h1>
