@@ -7,6 +7,7 @@ import LanguageSelector from "./LanguageSelector";
 import { CODE_SNIPPETS } from "@/constants";
 import { Box } from "@chakra-ui/react";
 import Output from "./Output";
+import DocsPanel from "./DocsPanel";
 import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
@@ -25,6 +26,8 @@ export default function CodeEditor({ file }) {
   const editorRef = useRef();
   const [codeLanguage, setCodeLanguage] = useState("javascript");
   const settingsRef = useRef(null);
+  const [documentation, setDocumentation] = useState("");
+  const [activeTab, setActiveTab] = useState("output"); // 'output' | 'docs'
 
   useEffect(() => {
     if (file) {
@@ -98,9 +101,9 @@ export default function CodeEditor({ file }) {
         code: updatedCode,
         language: codeLanguage,
       });
-      const documentation = res.data.documentation;
-      const commentedDocs = `\n\n${documentation}`;
-      setUpdatedCode((prevCode) => prevCode + commentedDocs);
+      const docs = res.data.documentation;
+      setDocumentation(docs);
+      setActiveTab("docs");
     } catch (error) {
       console.error("Failed to generate documentation:", error);
     } finally {
@@ -329,9 +332,39 @@ export default function CodeEditor({ file }) {
         </div>
 
         {/* Output Panel */}
+        {/* Right Panel (Output & Docs) */}
         {!isExpanded && (
-          <div className="w-[30%] h-full bg-black border-l border-white/10">
-            <Output editorRef={editorRef} language={codeLanguage} />
+          <div className="w-[30%] h-full bg-black border-l border-white/10 flex flex-col">
+            {/* Tab Switcher */}
+            <div className="flex border-b border-white/10 bg-zinc-900/50">
+              <button
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "output"
+                  ? "text-white border-b-2 border-white bg-white/5"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                  }`}
+                onClick={() => setActiveTab("output")}
+              >
+                Output
+              </button>
+              <button
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "docs"
+                  ? "text-white border-b-2 border-white bg-white/5"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                  }`}
+                onClick={() => setActiveTab("docs")}
+              >
+                Docs
+              </button>
+            </div>
+
+            {/* Panel Content */}
+            <div className="flex-1 overflow-hidden relative">
+              {activeTab === "output" ? (
+                <Output editorRef={editorRef} language={codeLanguage} />
+              ) : (
+                <DocsPanel documentation={documentation} />
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -9,17 +9,15 @@ export async function POST(request) {
         }
 
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 
         const prompt = `
-        Generate documentation for the following code.
-        Ensure that the documentation is in the form of inline comments to be added at the end of the file. 
-        Dont write comment for each and every line of code.
-        Use the appropriate comment style for the provided language.
-        Dont include the language at the top just the comments.
-        do not include the code or any markdowns just the comments.
-        and amke it as detailed and descriptive as possible.dont write the language
+        Generate detailed documentation for the following code.
+        The documentation should be in plain text format, NOT as code comments.
+        Do not include any code blocks or markdown formatting like bold or italics if possible, just clean text.
+        Explain the purpose, functionality, and key components of the code.
+        Do not include the original code in the response.
         Code:
         ${code}
         `;
@@ -30,7 +28,7 @@ export async function POST(request) {
         // Ensure the response doesn't contain the code or markdown
         //documentation = documentation.replace(/```[\s\S]*?```/g, ""); // Remove triple backticks if any
         documentation = documentation.replace(code, "").trim(); // Remove the code if it appears
-        documentation = documentation.replace(language, "").trim(); 
+        documentation = documentation.replace(language, "").trim();
         documentation = documentation.replace(/`{3}/g, "").replace(/`{3}$/g, "");
 
 

@@ -729,7 +729,7 @@ export default function HomePage() {
                 <h1 className="text-5xl sm:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
                   <span className="block text-white">Code Smarter,</span>
                   <span className="block bg-gradient-to-r from-white via-purple-100 to-purple-300 bg-clip-text text-transparent">
-                    Ship Faster
+                    Execute Faster
                   </span>
                 </h1>
 
