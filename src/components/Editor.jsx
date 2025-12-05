@@ -1,7 +1,8 @@
+
 "use client";
-import { Moon, Sun, Sparkles, Wrench, File, Expand, Shrink, Settings, Code2 } from "lucide-react";
+import { Moon, Sun, Sparkles, Wrench, File, Expand, Shrink, Settings, Code2, Check, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import Editor, { useMonaco } from "@monaco-editor/react";
+import Editor, { useMonaco, DiffEditor } from "@monaco-editor/react";
 import axios from "axios";
 import LanguageSelector from "./LanguageSelector";
 import { CODE_SNIPPETS } from "@/constants";
@@ -29,6 +30,11 @@ export default function CodeEditor({ file }) {
   const [documentation, setDocumentation] = useState("");
   const [activeTab, setActiveTab] = useState("output"); // 'output' | 'docs'
 
+  // Diff View State
+  const [isDiffView, setIsDiffView] = useState(false);
+  const [originalCode, setOriginalCode] = useState("");
+  const [fixedCode, setFixedCode] = useState("");
+
   useEffect(() => {
     if (file) {
       fetchFileContent();
@@ -38,20 +44,20 @@ export default function CodeEditor({ file }) {
   useEffect(() => {
     if (!file?.id || !file?.workspaceId) return;
 
-    const filePath = `workspaces/${file.workspaceId}/files`;
+    const filePath = `workspaces / ${file.workspaceId}/files`;
     const fileRef = doc(db, filePath, file.id);
 
     const unsubscribe = onSnapshot(fileRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        if (data.content !== updatedCode) {
+        if (data.content !== updatedCode && !isDiffView) {
           setUpdatedCode(data.content || "");
         }
       }
     });
 
     return () => unsubscribe();
-  }, [file]);
+  }, [file, isDiffView]);
 
   const fetchFileContent = async () => {
     if (!file?.id || !file?.workspaceId) return;
@@ -120,9 +126,13 @@ export default function CodeEditor({ file }) {
       });
 
       if (res.data.fixedCode) {
-        setUpdatedCode(res.data.fixedCode);
         if (!res.data.aiFixed) {
           console.log("No fixes were needed");
+          // Optionally show a toast here
+        } else {
+          setOriginalCode(updatedCode);
+          setFixedCode(res.data.fixedCode);
+          setIsDiffView(true);
         }
       }
     } catch (error) {
@@ -133,6 +143,20 @@ export default function CodeEditor({ file }) {
     } finally {
       setIsFixing(false);
     }
+  };
+
+  const applyFix = () => {
+    setUpdatedCode(fixedCode);
+    autoSaveFile(fixedCode);
+    setIsDiffView(false);
+    setOriginalCode("");
+    setFixedCode("");
+  };
+
+  const cancelFix = () => {
+    setIsDiffView(false);
+    setOriginalCode("");
+    setFixedCode("");
   };
 
   const toggleExpand = () => {
@@ -188,146 +212,188 @@ export default function CodeEditor({ file }) {
             )}
 
             <div className="flex gap-2 items-center">
-              {/* Settings Dropdown */}
-              <div className="relative" ref={settingsRef}>
-                <button
-                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  onClick={() => setShowSettings(!showSettings)}
-                  title="Editor Settings"
-                >
-                  <Settings size={16} />
-                </button>
-                {showSettings && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-3 z-50">
-                    <div>
-                      <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
-                        Theme
-                      </label>
-                      <select
-                        className="w-full bg-zinc-800 text-zinc-200 text-xs p-2 rounded-lg border border-white/5 focus:border-white/20 outline-none"
-                        value={selectedTheme}
-                        onChange={(e) => setSelectedTheme(e.target.value)}
-                      >
-                        {themes.map((theme) => (
-                          <option key={theme.value} value={theme.value}>
-                            {theme.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
-                        Font Size
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="range"
-                          min="10"
-                          max="24"
-                          value={fontSize}
-                          onChange={(e) => setFontSize(Number(e.target.value))}
-                          className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-white"
-                        />
-                        <span className="text-xs text-zinc-300 w-8 text-right font-mono">
-                          {fontSize}px
-                        </span>
+              {/* Diff View Controls */}
+              {isDiffView ? (
+                <>
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-lg text-xs font-medium text-green-400 hover:text-green-300 transition-all"
+                    onClick={applyFix}
+                  >
+                    <Check size={12} />
+                    Apply Fix
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 transition-all"
+                    onClick={cancelFix}
+                  >
+                    <X size={12} />
+                    Cancel
+                  </button>
+                  <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                </>
+              ) : (
+                <>
+                  {/* Settings Dropdown */}
+                  <div className="relative" ref={settingsRef}>
+                    <button
+                      className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      onClick={() => setShowSettings(!showSettings)}
+                      title="Editor Settings"
+                    >
+                      <Settings size={16} />
+                    </button>
+                    {showSettings && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-3 z-50">
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
+                            Theme
+                          </label>
+                          <select
+                            className="w-full bg-zinc-800 text-zinc-200 text-xs p-2 rounded-lg border border-white/5 focus:border-white/20 outline-none"
+                            value={selectedTheme}
+                            onChange={(e) => setSelectedTheme(e.target.value)}
+                          >
+                            {themes.map((theme) => (
+                              <option key={theme.value} value={theme.value}>
+                                {theme.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5 block font-medium">
+                            Font Size
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="range"
+                              min="10"
+                              max="24"
+                              value={fontSize}
+                              onChange={(e) => setFontSize(Number(e.target.value))}
+                              className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-white"
+                            />
+                            <span className="text-xs text-zinc-300 w-8 text-right font-mono">
+                              {fontSize}px
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                  <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
-              {/* Undo/Redo Buttons */}
-              <button
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                onClick={() => editorRef.current?.trigger('keyboard', 'undo')}
-                title="Undo"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7v6h6" />
-                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-                </svg>
-              </button>
-              <button
-                className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                onClick={() => editorRef.current?.trigger('keyboard', 'redo')}
-                title="Redo"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 7v6h-6" />
-                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
-                </svg>
-              </button>
+                  {/* Undo/Redo Buttons */}
+                  <button
+                    className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={() => editorRef.current?.trigger('keyboard', 'undo')}
+                    title="Undo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 7v6h6" />
+                      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                    </svg>
+                  </button>
+                  <button
+                    className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={() => editorRef.current?.trigger('keyboard', 'redo')}
+                    title="Redo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 7v6h-6" />
+                      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+                    </svg>
+                  </button>
 
-              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                  <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
-              {/* Action Buttons */}
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={generateDocs}
-                disabled={isLoading}
-              >
-                <Sparkles size={12} />
-                {isLoading ? "Generating..." : "Docs"}
-              </button>
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={fixSyntaxErrors}
-                disabled={isFixing}
-              >
-                <Wrench size={12} />
-                {isFixing ? "Fixing..." : "Fix"}
-              </button>
+                  {/* Action Buttons */}
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={generateDocs}
+                    disabled={isLoading}
+                  >
+                    <Sparkles size={12} />
+                    {isLoading ? "Generating..." : "Docs"}
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg text-xs font-medium text-zinc-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={fixSyntaxErrors}
+                    disabled={isFixing}
+                  >
+                    <Wrench size={12} />
+                    {isFixing ? "Fixing..." : "Fix"}
+                  </button>
 
-              <button
-                className="p-1.5 hidden text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                onClick={toggleExpand}
-                title={isExpanded ? "Collapse" : "Expand"}
-              >
-                {isExpanded ? <Shrink size={16} /> : <Expand size={16} />}
-              </button>
+                  <button
+                    className="p-1.5 hidden text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={toggleExpand}
+                    title={isExpanded ? "Collapse" : "Expand"}
+                  >
+                    {isExpanded ? <Shrink size={16} /> : <Expand size={16} />}
+                  </button>
 
-              <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                  <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
-              <LanguageSelector language={codeLanguage} onSelect={onSelect} />
+                  <LanguageSelector language={codeLanguage} onSelect={onSelect} />
+                </>
+              )}
             </div>
           </div>
 
-          {/* Monaco Editor */}
+          {/* Monaco Editor or Diff Editor */}
           <div className="flex-1 relative bg-[#1e1e1e]">
-            <Editor
-              height="100%"
-              theme={selectedTheme}
-              language={getMonacoLanguage(codeLanguage)}
-              defaultValue={CODE_SNIPPETS[codeLanguage]}
-              value={updatedCode}
-              onMount={onMount}
-              onChange={handleEditorChange}
-              options={{
-                fontSize: fontSize,
-                wordWrap: "on",
-                minimap: { enabled: false },
-                bracketPairColorization: true,
-                suggest: { preview: true },
-                inlineSuggest: {
-                  enabled: true,
-                  showToolbar: "onHover",
-                  mode: "subword",
-                  suppressSuggestions: false,
-                },
-                quickSuggestions: {
-                  other: true,
-                  comments: true,
-                  strings: true,
-                },
-                suggestSelection: "recentlyUsed",
-                padding: { top: 16, bottom: 16 },
-                scrollBeyondLastLine: false,
-                fontFamily: "'Fira Code', monospace",
-              }}
-            />
+            {isDiffView ? (
+              <DiffEditor
+                height="100%"
+                theme={selectedTheme}
+                language={getMonacoLanguage(codeLanguage)}
+                original={originalCode}
+                modified={fixedCode}
+                options={{
+                  fontSize: fontSize,
+                  wordWrap: "on",
+                  minimap: { enabled: false },
+                  readOnly: true,
+                  renderSideBySide: true,
+                  fontFamily: "'Fira Code', monospace",
+                  padding: { top: 16, bottom: 16 },
+                }}
+              />
+            ) : (
+              <Editor
+                height="100%"
+                theme={selectedTheme}
+                language={getMonacoLanguage(codeLanguage)}
+                defaultValue={CODE_SNIPPETS[codeLanguage]}
+                value={updatedCode}
+                onMount={onMount}
+                onChange={handleEditorChange}
+                options={{
+                  fontSize: fontSize,
+                  wordWrap: "on",
+                  minimap: { enabled: false },
+                  bracketPairColorization: true,
+                  suggest: { preview: true },
+                  inlineSuggest: {
+                    enabled: true,
+                    showToolbar: "onHover",
+                    mode: "subword",
+                    suppressSuggestions: false,
+                  },
+                  quickSuggestions: {
+                    other: true,
+                    comments: true,
+                    strings: true,
+                  },
+                  suggestSelection: "recentlyUsed",
+                  padding: { top: 16, bottom: 16 },
+                  scrollBeyondLastLine: false,
+                  fontFamily: "'Fira Code', monospace",
+                }}
+              />
+            )}
           </div>
         </div>
 

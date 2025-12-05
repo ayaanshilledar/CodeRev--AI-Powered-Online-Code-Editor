@@ -91,7 +91,7 @@ const Workspace = () => {
 
           {/* Left Side - File & Folder Panel */}
           <nav
-             className={`relative z-30 transition-all duration-300 ${isNavOpen ? "w-[280px]" : "w-0"} overflow-hidden bg-zinc-900/40 backdrop-blur-md border-r border-white/5 flex flex-col h-full`}            
+            className={`relative z-30 transition-all duration-300 ${isNavOpen ? "w-[280px]" : "w-0"} overflow-hidden bg-zinc-900/40 backdrop-blur-md border-r border-white/5 flex flex-col h-full`}
           >
             {isNavOpen && (
               <NavPanel workspaceId={workspaceId} openFile={setSelectedFile} />
@@ -120,7 +120,7 @@ const Workspace = () => {
                   <ShowMembers workspaceId={workspaceId} />
                 </div>
 
-          
+
               </div>
             </div>
 
@@ -172,7 +172,7 @@ const Workspace = () => {
           <LiveCursor workspaceId={workspaceId} />
         </div>
 
-       
+
       </div>
     </WorkspaceStateProvider>
   );
