@@ -44,9 +44,15 @@ const Navbar = () => {
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#howitworks" },
     { label: "Testimonials", href: "#testimonials" },
+    { label: "Team", href: "/team" },
   ];
 
   const scrollToSection = (href) => {
+    // If it's a route (starts with /), navigate using Link
+    if (href.startsWith('/')) {
+      return; // Link component will handle navigation
+    }
+    // Otherwise, it's a scroll anchor
     const id = href.replace("#", "");
     const element = document.getElementById(id);
     if (element) {
@@ -74,14 +80,23 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => scrollToSection(item.href)}
-              className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors relative group"
-            >
-              {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-zinc-900 dark:bg-white transition-all duration-300 group-hover:w-full" />
-            </button>
+            item.href.startsWith('/') ? (
+              <Link key={item.label} href={item.href}>
+                <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors relative group cursor-pointer">
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-px bg-zinc-900 dark:bg-white transition-all duration-300 group-hover:w-full" />
+                </span>
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                onClick={() => scrollToSection(item.href)}
+                className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors relative group"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-zinc-900 dark:bg-white transition-all duration-300 group-hover:w-full" />
+              </button>
+            )
           ))}
         </div>
 
@@ -112,13 +127,21 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white/95 dark:bg-black/95 backdrop-blur-2xl border-t border-zinc-200 dark:border-white/5 p-6 flex flex-col gap-4">
           {navLinks.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => scrollToSection(item.href)}
-              className="text-sm text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors text-left"
-            >
-              {item.label}
-            </button>
+            item.href.startsWith('/') ? (
+              <Link key={item.label} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                <span className="text-sm text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors text-left cursor-pointer block">
+                  {item.label}
+                </span>
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                onClick={() => scrollToSection(item.href)}
+                className="text-sm text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors text-left"
+              >
+                {item.label}
+              </button>
+            )
           ))}
           <div className="flex flex-col gap-3 mt-2 border-t border-zinc-200 dark:border-white/10 pt-4">
             <div className="flex justify-between items-center">
